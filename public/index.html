@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WebDBFViewer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            color: #333;
+        }
+
+        h2 {
+            color: #2c3e50;
+        }
+
+        .controls {
+            margin-bottom: 10px;
+        }
+
+        .search-bar {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .table-container {
+            max-height: 65vh;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+            background: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        /* หัวตารางลอย (Sticky Header) */
+        th {
+            position: sticky;
+            top: 0;
+            background: #efefef;
+            z-index: 1;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .pagination {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        input[readonly] {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 5px;
+            width: 300px;
+            border-radius: 4px;
+        }
+
+        input[type="text"]#searchInput {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 1px solid #2c3e50;
+            background: #34495e;
+            color: white;
+        }
+
+        button:hover {
+            background: #2c3e50;
+        }
+
+        button:disabled {
+            background: #ccc;
+            border-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.btn-clear {
+            background: #e74c3c;
+            border-color: #c0392b;
+        }
+
+        button.btn-clear:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>WebDBFViewer</h2>
+
+    <div class="controls">
+        <input type="text" id="fileNameDisplay" placeholder="ไม่ได้เลือกไฟล์" readonly>
+        <button onclick="document.getElementById('fileInput').click()">Browse</button>
+        <input type="file" id="fileInput" accept=".dbf" style="display:none" onchange="handleFileSelect(this)">
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="ใส่คำค้นหา (เช่น 'สมชาย กรุงเทพ')..." style="flex-grow: 1;">
+        <button onclick="searchData()">ค้นหา</button>
+        <button class="btn-clear" onclick="clearSearch()">ล้างการค้นหา</button>
+    </div>
+
+    <div class="table-container">
+        <table id="dataTable">
+            <thead>
+                <tr id="tableHeader"></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="pagination" id="paginationControls"></div>
+
+    <script>
+        let currentPage = 1;
+
+        async function handleFileSelect(input) {
+            if (!input.files[0]) return;
+
+            const file = input.files[0];
+            document.getElementById('fileNameDisplay').value = file.name;
+
+            const formData = new FormData();
+            formData.append('dbfFile', file);
+
+            const res = await fetch('/upload', { method: 'POST', body: formData });
+            if (res.ok) {
+                currentPage = 1;
+                loadData();
+            } else {
+                alert('เกิดข้อผิดพลาดในการ Upload ไฟล์');
+            }
+        }
+
+        async function loadData() {
+            const search = document.getElementById('searchInput').value;
+            const res = await fetch(`/data?page=${currentPage}&search=${encodeURIComponent(search)}`);
+            const result = await res.json();
+            renderTable(result.data);
+            renderPagination(result.totalPages);
+        }
+
+        function renderTable(data) {
+            const head = document.getElementById('tableHeader');
+            const body = document.getElementById('tableBody');
+            head.innerHTML = '';
+            body.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                body.innerHTML = '<tr><td colspan="100%" style="text-align:center;">ไม่พบข้อมูล</td></tr>';
+                return;
+            }
+
+            const keys = Object.keys(data[0]);
+            keys.forEach(key => {
+                const th = document.createElement('th');
+                th.textContent = key;
+                head.appendChild(th);
+            });
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                keys.forEach(key => {
+                    const td = document.createElement('td');
+                    td.textContent = row[key];
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+        }
+
+        function renderPagination(totalPages) {
+            const container = document.getElementById('paginationControls');
+            if (totalPages === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `หน้า: ${currentPage} / ${totalPages} `;
+
+            const prev = document.createElement('button');
+            prev.innerText = 'ก่อนหน้า';
+            prev.disabled = currentPage === 1;
+            prev.onclick = () => { currentPage--; loadData(); };
+
+            const next = document.createElement('button');
+            next.innerText = 'ถัดไป';
+            next.disabled = currentPage >= totalPages;
+            next.onclick = () => { currentPage++; loadData(); };
+
+            container.appendChild(prev);
+            container.appendChild(next);
+        }
+
+        function searchData() {
+            currentPage = 1;
+            loadData();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            currentPage = 1;
+            loadData();
+        }
+
+        // รองรับการกด Enter เพื่อค้นหา
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                searchData();
+            }
+        });
+    </script>
+</body>
+
+</html>
