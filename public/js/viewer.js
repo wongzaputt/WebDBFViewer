@@ -10,7 +10,7 @@ async function handleFileSelect(input) {
   const formData = new FormData();
   formData.append("dbfFile", file);
 
-  const res = await fetch("/upload", { method: "POST", body: formData });
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
   if (res.ok) {
     currentPage = 1;
     loadData();
@@ -22,7 +22,7 @@ async function handleFileSelect(input) {
 async function loadData() {
   const search = document.getElementById("searchInput").value;
   const res = await fetch(
-    `/data?page=${currentPage}&search=${encodeURIComponent(search)}`,
+    `/api/data?page=${currentPage}&search=${encodeURIComponent(search)}`,
   );
   const result = await res.json();
   renderTable(result.data);
