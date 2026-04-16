@@ -5,10 +5,11 @@
 ## 🌟 คุณสมบัติ (Features)
 
 - **AI-Driven Development**: พัฒนาขึ้นโดยมี AI เป็นผู้ช่วยในการร่างโครงสร้างและแก้ปัญหาทางเทคนิค
+- **Modular Routing**: แยกส่วนการทำงานของ API ออกจากไฟล์หลัก เพื่อให้อ่านง่ายและขยายโปรเจกต์ได้สะดวก
 - **DBF Support**: รองรับการอ่านไฟล์ `.DBF` และจัดการ Encoding ภาษาไทย (**CP874**) ได้อย่างถูกต้อง
 - **Fast Upload**: ระบบเลือกไฟล์แบบ Browse และบันทึกลง Server ด้วยชื่อไฟล์เดิมในโฟลเดอร์ `./temp_db`
 - **Dynamic Search**: ค้นหาข้อมูลแบบ Multiple Keywords (แยกด้วยช่องว่าง) ครอบคลุมทุกฟิลด์ในตาราง
-- **Smooth UI**: 
+- **Smooth UI**:
   - หัวตารางลอย (Sticky Header) สะดวกต่อการดูข้อมูลจำนวนมาก
   - ระบบแบ่งหน้า (Pagination) หน้าละ 100 รายการ เพื่อประสิทธิภาพในการโหลด
   - แยกส่วน Style (CSS) และ Logic (JS) ชัดเจน ง่ายต่อการปรับแต่ง
@@ -17,8 +18,8 @@
 
 คุณสามารถรับชมขั้นตอนการพัฒนาโปรเจกต์นี้โดยใช้ AI ช่วยเขียนโค้ดได้ที่ YouTube:
 
-* **Part 1: การเริ่มโปรเจกต์และโครงสร้างพื้นฐาน** 🎥 [ชมวิดีโอตอนที่ 1](https://youtu.be/uHNMt_-9mJk)
-* **Part 2: การจัดการภาษาไทยและการค้นหาขั้นสูง** 🎥 [ชมวิดีโอตอนที่ 2](https://youtu.be/ygaUP_4TtD8)
+- **Part 1: การเริ่มโปรเจกต์และโครงสร้างพื้นฐาน** 🎥 [ชมวิดีโอตอนที่ 1](https://youtu.be/uHNMt_-9mJk)
+- **Part 2: การจัดการภาษาไทยและการค้นหาขั้นสูง** 🎥 [ชมวิดีโอตอนที่ 2](https://youtu.be/ygaUP_4TtD8)
 
 ## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
 
@@ -29,17 +30,20 @@
 ## 🚀 เริ่มต้นใช้งาน (Getting Started)
 
 1.  **Clone Repository:**
+
     ```bash
     git clone [https://github.com/wongzaputt/WebDBFViewer.git](https://github.com/wongzaputt/WebDBFViewer.git)
     cd WebDBFViewer
     ```
 
 2.  **Install Dependencies:**
+
     ```bash
     npm install
     ```
 
 3.  **Run Server:**
+
     ```bash
     node index.js
     ```
@@ -47,19 +51,21 @@
 4.  **Access Web:**
     เปิด Browser ไปที่ `http://localhost:3000`
 
-## 📝 โครงสร้างโปรเจกต์
+## 📝 โครงสร้างโปรเจกต์ (New Structure)
 
 ```text
 WebDBFViewer/
-├── public/
+├── public/                 # ส่วนแสดงผลฝั่ง Client
 │   ├── css/
 │   │   └── style.css       # ไฟล์จัดการความสวยงาม
 │   ├── js/
-│   │   └── viewer.js      # Logic ฝั่ง Client
+│   │   └── viewer.js      # Logic ฝั่ง Client (เรียกใช้ API ผ่าน /api/...)
 │   └── index.html         # หน้าจอหลัก
+├── routes/                 # ส่วนจัดการ API (Backend Logic)
+│   └── dbfRoutes.js       # รวบรวม Endpoint สำหรับ Upload และดึงข้อมูล
 ├── temp_db/               # โฟลเดอร์เก็บไฟล์ .DBF ที่อัปโหลด (Ignore ใน Git)
-├── index.js               # Server-side Logic
-├── package.json           # รายการ Library ที่ใช้
+├── index.js               # ไฟล์หลักสำหรับเปิด Server และตั้งค่า Middleware
+├── package.json           # รายการ Library และรายละเอียดโปรเจกต์
 └── .gitignore             # ไฟล์ยกเว้นการติดตามของ Git
 
 โปรเจกต์นี้สร้างขึ้นเพื่อการเรียนรู้และเป็นตัวอย่างการประยุกต์ใช้ AI ในงานพัฒนาซอฟต์แวร์
