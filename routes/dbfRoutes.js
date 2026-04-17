@@ -47,7 +47,7 @@ router.post("/upload", upload.single("dbfFile"), async (req, res) => {
 // API สำหรับดึงข้อมูล พร้อมระบบค้นหาและแบ่งหน้า
 router.get("/data", (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = 100;
+  const limit = parseInt(req.query.limit) || 100; // รองรับ limit จาก fetch
   const search = req.query.search || "";
 
   let filteredData = cachedData;
@@ -65,7 +65,7 @@ router.get("/data", (req, res) => {
   }
 
   const startIndex = (page - 1) * limit;
-  const endIndex = page * limit;
+  const endIndex = startIndex + limit;
 
   res.json({
     data: filteredData.slice(startIndex, endIndex),

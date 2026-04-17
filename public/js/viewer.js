@@ -99,6 +99,55 @@ function clearSearch() {
   loadData();
 }
 
+// ฟังก์ชันเดิม: Export เฉพาะข้อมูลที่เห็นบนตารางปัจจุบัน (100 รายการ)
+function exportCurrentPage() {
+    const table = document.getElementById("dataTable");
+    if (!table || table.rows.length <= 1) {
+        alert("ไม่มีข้อมูลในหน้านี้ที่จะส่งออก");
+        return;
+    }
+    const ws = XLSX.utils.table_to_sheet(table);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Current_Page");
+    
+    let fileName = document.getElementById('fileNameDisplay').value || 'Export';
+    XLSX.writeFile(wb, `${fileName.split('.')[0]}_Page${currentPage}.xlsx`);
+}
+
+// ฟังก์ชันใหม่: ดึงข้อมูลทั้งหมดจาก Server ตามคำค้นหา แล้ว Export
+async function exportAllData() {
+    const search = document.getElementById('searchInput').value;
+    const fileNameDisplay = document.getElementById('fileNameDisplay').value;
+
+    if (!fileNameDisplay || fileNameDisplay === "ไม่ได้เลือกไฟล์") {
+        alert("กรุณาอัปโหลดไฟล์ก่อน");
+        return;
+    }
+
+    try {
+        // เรียก API โดยขอ limit สูงๆ เพื่อให้ได้ข้อมูลทั้งหมดที่กรองแล้ว
+        const res = await fetch(`/api/data?page=1&limit=999999&search=${encodeURIComponent(search)}`);
+        const result = await res.json();
+        const allData = result.data;
+
+        if (!allData || allData.length === 0) {
+            alert("ไม่พบข้อมูลที่จะส่งออก");
+            return;
+        }
+
+        const ws = XLSX.utils.json_to_sheet(allData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "All_Filtered_Data");
+
+        let fileName = fileNameDisplay.split('.')[0];
+        XLSX.writeFile(wb, `${fileName}_Full_Report.xlsx`);
+
+    } catch (error) {
+        console.error("Export All Error:", error);
+        alert("เกิดข้อผิดพลาดในการส่งออกข้อมูลทั้งหมด");
+    }
+}
+
 // รองรับการกด Enter เพื่อค้นหา
 document
   .getElementById("searchInput")
