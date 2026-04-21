@@ -29,6 +29,5 @@ Thumbs.db
 *.sw?
 
 dockerinstruction.txt
-.gitignore
-.dockerignore
 .git
+viewer.tar 

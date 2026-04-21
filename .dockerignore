@@ -4,3 +4,4 @@ temp_db/*
 .git
 .gitignore
 dockerinstruction.txt
+viewer.tar
