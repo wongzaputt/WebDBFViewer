@@ -3,3 +3,4 @@ npm-debug.log
 temp_db/*
 .git
 .gitignore
+dockerinstruction.txt

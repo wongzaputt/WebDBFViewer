@@ -27,3 +27,8 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+dockerinstruction.txt
+.gitignore
+.dockerignore
+.git
