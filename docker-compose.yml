@@ -1,9 +1,9 @@
 services:
   web-viewer:
-    build: .
+    image: web-dbf-viewer:v1.0
     container_name: web-dbf-viewer
     ports:
       - "3000:3000"
     volumes:
-      - ./temp_db:/app/temp_db # เชื่อมโฟลเดอร์ในเครื่องจริงกับ Container เพื่อดูไฟล์ได้
+      - ./temp_db:/app/temp_db
     restart: always
