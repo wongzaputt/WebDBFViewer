@@ -5,82 +5,95 @@ const { DBFFile } = require("dbffile");
 const fs = require("fs");
 const path = require("path");
 
-const tempDir = "./temp_db";
+// กำหนด Path ให้ชัดเจน
+const tempDir = path.join(__dirname, "../temp_db");
 
-// ตรวจสอบและสร้างโฟลเดอร์ temp_db ถ้ายังไม่มี
 if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir);
+  fs.mkdirSync(tempDir, { recursive: true });
 }
 
-// ตั้งค่าการเก็บไฟล์ด้วยชื่อเดิม
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, tempDir);
   },
   filename: function (req, file, cb) {
-    // ใช้ชื่อไฟล์แบบสุ่มเพื่อป้องกัน Path Traversal
+    // ป้องกันการทำ Path Traversal และใช้ชื่อสุ่มที่ปลอดภัย
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, `upload-${uniqueSuffix}.dbf`);
   },
 });
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // จำกัดไว้ที่ 100MB
+  limits: { 
+    fileSize: 100 * 1024 * 1024, // 100 MB
+    files: 1 // อัปโหลดได้ทีละ 1 ไฟล์ต่อ request
+  },
   fileFilter: (req, file, cb) => {
-    if (path.extname(file.originalname).toLowerCase() === '.dbf') {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext === '.dbf') {
       cb(null, true);
     } else {
-      cb(new Error('Only .dbf files are allowed'));
+      cb(new Error('รองรับเฉพาะไฟล์ .dbf เท่านั้น'));
     }
   }
 });
 
-// ตัวแปรเก็บข้อมูลไว้ใน Memory (Shared ภายในไฟล์นี้)
 let cachedData = [];
 
-// API สำหรับ Upload ไฟล์
 router.post("/upload", upload.single("dbfFile"), async (req, res) => {
-  let filePath = null;
-  try {
-    if (!req.file) throw new Error("No file uploaded");
+  if (!req.file) {
+    return res.status(400).json({ error: "กรุณาเลือกไฟล์" });
+  }
 
-    filePath = req.file.path;
-    // รองรับภาษาไทย Express Accounting ด้วย cp874
+  const filePath = req.file.path;
+
+  try {
+    // เคลียร์ Cache เดิมเพื่อคืน Memory ก่อนโหลดไฟล์ใหม่
+    cachedData = [];
+
     const dbf = await DBFFile.open(filePath, { encoding: "cp874" });
     const records = await dbf.readRecords();
 
-    // สร้าง Search Index ล่วงหน้า
+    // ทำ Index สำหรับค้นหา
     cachedData = records.map((r) => ({
       ...r,
-      _searchIndex: Object.values(r).join(" ").toLowerCase(),
+      _searchIndex: Object.values(r).filter(v => v).join(" ").toLowerCase(),
     }));
 
-    // ลบไฟล์ทันทีหลังใช้งาน
-    fs.unlink(filePath, (err) => {
-      if (err) console.error("Error deleting temp file:", err);
+    // ส่ง Response กลับ (ไม่ต้องรอให้ลบไฟล์เสร็จ)
+    res.json({ 
+      filename: req.file.originalname, 
+      total: records.length,
+      message: "อัปโหลดและประมวลผลสำเร็จ" 
     });
 
-    res.json({ filename: req.file.originalname, total: records.length });
   } catch (error) {
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    console.error("Processing Error:", error);
+    res.status(500).json({ error: "ไม่สามารถประมวลผลไฟล์ DBF ได้: " + error.message });
+  } finally {
+    // ลบไฟล์ชั่วคราวทิ้งเสมอ (ไม่ว่าจะ Error หรือสำเร็จ)
+    if (fs.existsSync(filePath)) {
+      fs.unlink(filePath, (err) => {
+        if (err) console.error("Cleanup Error:", err);
+      });
     }
-    res.status(500).json({ error: error.message });
   }
 });
 
-// API สำหรับดึงข้อมูล พร้อมระบบค้นหาและแบ่งหน้า
+// API สำหรับดึงข้อมูล พร้อมระบบค้นหา, เรียงลำดับ และแบ่งหน้า
 router.get("/data", (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 100;
   const search = req.query.search || "";
-  const sortBy = req.query.sortBy;
-  const sortDir = req.query.sortDir || "asc";
+  
+  // รับพารามิเตอร์การ Sort จาก Frontend
+  const sortBy = req.query.sort; 
+  const sortDir = req.query.order || "asc";
 
   let filteredData = [...cachedData];
 
-  // ระบบค้นหา
+  // 1. ระบบค้นหา (Multi-keyword search)
   if (search) {
     const keywords = search
       .toLowerCase()
@@ -92,15 +105,24 @@ router.get("/data", (req, res) => {
     });
   }
 
-  // ระบบ Sort
-  if (sortBy) {
+  // 2. ระบบเรียงลำดับ (Sorting Logic)
+  if (sortBy && filteredData.length > 0) {
     filteredData.sort((a, b) => {
       let valA = a[sortBy];
       let valB = b[sortBy];
 
-      // จัดการกรณีที่เป็น String ให้เทียบแบบไม่สนตัวพิมพ์เล็กใหญ่
-      if (typeof valA === "string") valA = valA.toLowerCase().trim();
-      if (typeof valB === "string") valB = valB.toLowerCase().trim();
+      // ตรวจสอบว่าเป็นตัวเลขหรือไม่ (สำหรับฟิลด์ยอดเงิน หรือจำนวน)
+      const isNumA = typeof valA === 'number' || (!isNaN(parseFloat(valA)) && isFinite(valA));
+      const isNumB = typeof valB === 'number' || (!isNaN(parseFloat(valB)) && isFinite(valB));
+
+      if (isNumA && isNumB) {
+        valA = parseFloat(valA);
+        valB = parseFloat(valB);
+      } else {
+        // กรณีเป็น String ให้ลบช่องว่างและทำเป็นตัวเล็ก
+        valA = valA ? String(valA).toLowerCase().trim() : "";
+        valB = valB ? String(valB).toLowerCase().trim() : "";
+      }
 
       if (valA < valB) return sortDir === "asc" ? -1 : 1;
       if (valA > valB) return sortDir === "asc" ? 1 : -1;
@@ -108,10 +130,11 @@ router.get("/data", (req, res) => {
     });
   }
 
+  // 3. การแบ่งหน้า (Pagination)
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
 
-  // ส่งกลับ (Clean data)
+  // ส่งกลับข้อมูลที่ Clean แล้ว (ตัด _searchIndex ออก)
   const resultData = filteredData.slice(startIndex, endIndex).map((row) => {
     const { _searchIndex, ...rest } = row;
     return rest;
@@ -125,4 +148,3 @@ router.get("/data", (req, res) => {
 });
 
 module.exports = router;
-

@@ -1,428 +1,471 @@
 <!doctype html>
 <html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <title>WebDBFViewer</title>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <style>
-      /* CSS เดิมของคุณ */
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        padding: 20px;
-        color: #333;
-      }
-      h2 {
-        color: #2c3e50;
-      }
-      .controls {
-        margin-bottom: 10px;
-        display: flex;
-        gap: 5px;
-        align-items: center;
-      }
-      .search-bar {
-        margin-top: 10px;
-        display: flex;
-        gap: 8px;
-      }
-      .table-container {
-        max-height: 65vh;
-        overflow-y: auto;
-        border: 1px solid #ccc;
-        margin-top: 20px;
-        background: #fff;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-      }
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: left;
-      }
-      th {
-        position: sticky;
-        top: 0;
-        background: #efefef;
-        z-index: 1;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      }
-      tr:nth-child(even) {
-        background-color: #f9f9f9;
-      }
-      tr:hover {
-        background-color: #f1f1f1;
-      }
-      .pagination {
-        margin-top: 15px;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        font-weight: bold;
-      }
-      input[readonly] {
-        background: #f0f0f0;
-        border: 1px solid #ccc;
-        padding: 5px;
-        width: 300px;
-        border-radius: 4px;
-      }
-      input[type="text"]#searchInput {
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-      }
 
-      button {
-        padding: 8px 15px;
-        cursor: pointer;
-        border-radius: 4px;
-        border: 1px solid #2c3e50;
-        background: #34495e;
-        color: white;
-      }
-      button:hover {
-        background: #2c3e50;
-      }
-      button:disabled {
-        background: #ccc;
-        border-color: #ccc;
-        cursor: not-allowed;
-      }
-      button.btn-clear {
-        background: #e74c3c;
-        border-color: #c0392b;
-      }
-      button.btn-export {
-        background: #27ae60;
-        border-color: #219150;
-      }
-      button.btn-export-all {
-        background: #2980b9;
-        border-color: #2471a3;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <title>WebDBFViewer</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      color: #333;
+    }
 
-      /* สไตล์สำหรับ Modal (Structure) */
-      .modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-      }
-      .modal-content {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        width: 80%;
-        max-width: 600px;
-        max-height: 80vh;
-        overflow-y: auto;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-      }
-      .modal-header {
-        border-bottom: 2px solid #eee;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        font-weight: bold;
-        font-size: 1.2em;
-        color: #2c3e50;
-      }
-      .btn-close-modal {
-        float: right;
-        background: #95a5a6;
-        border: none;
-        padding: 5px 10px;
-      }
-    </style>
-  </head>
+    h2 {
+      color: #2c3e50;
+    }
 
-  <body>
-    <h2>WebDBFViewer</h2>
+    .controls {
+      margin-bottom: 10px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
 
-    <div class="controls">
-      <input
-        type="text"
-        id="fileNameDisplay"
-        placeholder="ไม่ได้เลือกไฟล์"
-        readonly
-      />
-      <button onclick="document.getElementById('fileInput').click()">
-        Browse
+    .search-bar {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .table-container {
+      max-height: 65vh;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #efefef;
+      z-index: 1;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* สไตล์สำหรับปุ่มจัดเรียง */
+    th:hover {
+      background: #e0e0e0;
+    }
+
+    th::after {
+      content: " ↕";
+      font-size: 0.8em;
+      color: #bbb;
+    }
+
+    th.sort-asc::after {
+      content: " ↑";
+      color: #2c3e50;
+    }
+
+    th.sort-desc::after {
+      content: " ↓";
+      color: #2c3e50;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    .pagination {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    input[readonly] {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      padding: 5px;
+      width: 300px;
+      border-radius: 4px;
+    }
+
+    input[type="text"]#searchInput {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 8px 15px;
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid #2c3e50;
+      background: #34495e;
+      color: white;
+    }
+
+    button:hover {
+      background: #2c3e50;
+    }
+
+    button:disabled {
+      background: #ccc;
+      border-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    button.btn-clear {
+      background: #e74c3c;
+      border-color: #c0392b;
+    }
+
+    button.btn-export {
+      background: #27ae60;
+      border-color: #219150;
+    }
+
+    button.btn-export-all {
+      background: #2980b9;
+      border-color: #2471a3;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      border-bottom: 2px solid #eee;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      font-weight: bold;
+      font-size: 1.2em;
+      color: #2c3e50;
+    }
+
+    .btn-close-modal {
+      float: right;
+      background: #95a5a6;
+      border: none;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>WebDBFViewer</h2>
+
+  <div class="controls">
+    <input type="text" id="fileNameDisplay" placeholder="ไม่ได้เลือกไฟล์" readonly />
+    <button onclick="document.getElementById('fileInput').click()">
+      Browse
+    </button>
+    <button id="btnStructure" onclick="openStructureModal()" disabled>
+      Structure
+    </button>
+    <input type="file" id="fileInput" accept=".dbf" style="display: none" onchange="handleFileSelect(this)" />
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="ใส่คำค้นหา..." style="flex-grow: 1" />
+    <button onclick="searchData()">ค้นหา</button>
+    <button class="btn-clear" onclick="clearSearch()">ล้างการค้นหา</button>
+    <button class="btn-export" onclick="exportCurrentPage()">
+      Export Page
+    </button>
+    <button class="btn-export-all" onclick="exportAllData()">
+      Export All
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table id="dataTable">
+      <thead>
+        <tr id="tableHeader"></tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="pagination" id="paginationControls"></div>
+
+  <div id="structureModal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="btn-close-modal" onclick="closeStructureModal()">
+        ปิด
       </button>
-      <button id="btnStructure" onclick="openStructureModal()" disabled>
-        Structure
-      </button>
-      <input
-        type="file"
-        id="fileInput"
-        accept=".dbf"
-        style="display: none"
-        onchange="handleFileSelect(this)"
-      />
-    </div>
-
-    <div class="search-bar">
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="ใส่คำค้นหา..."
-        style="flex-grow: 1"
-      />
-      <button onclick="searchData()">ค้นหา</button>
-      <button class="btn-clear" onclick="clearSearch()">ล้างการค้นหา</button>
-      <button class="btn-export" onclick="exportCurrentPage()">
-        Export Page
-      </button>
-      <button class="btn-export-all" onclick="exportAllData()">
-        Export All
-      </button>
-    </div>
-
-    <div class="table-container">
-      <table id="dataTable">
+      <div class="modal-header" id="modalTableName">Structure: Unknown</div>
+      <table id="structureTable">
         <thead>
-          <tr id="tableHeader"></tr>
+          <tr>
+            <th>Field Name</th>
+            <th>Inferred Type</th>
+            <th>Max Length</th>
+          </tr>
         </thead>
-        <tbody id="tableBody"></tbody>
+        <tbody id="structureBody"></tbody>
       </table>
     </div>
+  </div>
 
-    <div class="pagination" id="paginationControls"></div>
+  <script>
+    let currentPage = 1;
+    let lastRawData = [];
+    let sortField = "";  // ฟิลด์ที่จะเรียง
+    let sortOrder = "asc"; // asc หรือ desc
 
-    <div id="structureModal" class="modal-overlay">
-      <div class="modal-content">
-        <button class="btn-close-modal" onclick="closeStructureModal()">
-          ปิด
-        </button>
-        <div class="modal-header" id="modalTableName">Structure: Unknown</div>
-        <table id="structureTable">
-          <thead>
-            <tr>
-              <th>Field Name</th>
-              <th>Inferred Type</th>
-              <th>Max Length</th>
-            </tr>
-          </thead>
-          <tbody id="structureBody"></tbody>
-        </table>
-      </div>
-    </div>
+    async function handleFileSelect(input) {
+      if (!input.files[0]) return;
+      const file = input.files[0];
+      document.getElementById("fileNameDisplay").value = file.name;
 
-    <script>
-      let currentPage = 1;
-      let lastRawData = []; // เก็บข้อมูลดิบไว้เพื่อใช้วิเคราะห์ Structure
+      const formData = new FormData();
+      formData.append("dbfFile", file);
 
-      async function handleFileSelect(input) {
-        if (!input.files[0]) return;
-        const file = input.files[0];
-        document.getElementById("fileNameDisplay").value = file.name;
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        currentPage = 1;
+        sortField = ""; // ล้างค่าการเรียงเมื่อโหลดไฟล์ใหม่
+        loadData();
+      } else {
+        alert("เกิดข้อผิดพลาดในการ Upload ไฟล์");
+      }
+    }
 
-        const formData = new FormData();
-        formData.append("dbfFile", file);
+    async function loadData() {
+      const search = document.getElementById("searchInput").value;
+      // ส่ง sort และ order ไปด้วย
+      const url = `/api/data?page=${currentPage}&search=${encodeURIComponent(search)}&sort=${sortField}&order=${sortOrder}`;
 
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (res.ok) {
-          currentPage = 1;
+      const res = await fetch(url);
+      const result = await res.json();
+
+      lastRawData = result.data;
+      renderTable(result.data);
+      renderPagination(result.totalPages);
+
+      document.getElementById("btnStructure").disabled = !(
+        result.data && result.data.length > 0
+      );
+    }
+
+    function renderTable(data) {
+      const head = document.getElementById("tableHeader");
+      const body = document.getElementById("tableBody");
+      head.innerHTML = "";
+      body.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        body.innerHTML =
+          '<tr><td colspan="100%" style="text-align:center;">ไม่พบข้อมูล</td></tr>';
+        return;
+      }
+
+      const keys = Object.keys(data[0]);
+      keys.forEach((key) => {
+        const th = document.createElement("th");
+        th.textContent = key;
+
+        // แสดงสถานะลูกศรการ Sort
+        if (key === sortField) {
+          th.className = sortOrder === "asc" ? "sort-asc" : "sort-desc";
+        }
+
+        // คลิกที่หัวตารางเพื่อ Sort
+        th.onclick = () => {
+          if (sortField === key) {
+            sortOrder = sortOrder === "asc" ? "desc" : "asc";
+          } else {
+            sortField = key;
+            sortOrder = "asc";
+          }
           loadData();
-        } else {
-          alert("เกิดข้อผิดพลาดในการ Upload ไฟล์");
-        }
-      }
+        };
 
-      async function loadData() {
-        const search = document.getElementById("searchInput").value;
-        const res = await fetch(
-          `/api/data?page=${currentPage}&search=${encodeURIComponent(search)}`,
-        );
-        const result = await res.json();
+        head.appendChild(th);
+      });
 
-        lastRawData = result.data; // เก็บข้อมูลล่าสุดไว้
-        renderTable(result.data);
-        renderPagination(result.totalPages);
-
-        // เปิดใช้งานปุ่ม Structure เมื่อมีข้อมูล
-        document.getElementById("btnStructure").disabled = !(
-          result.data && result.data.length > 0
-        );
-      }
-
-      function renderTable(data) {
-        const head = document.getElementById("tableHeader");
-        const body = document.getElementById("tableBody");
-        head.innerHTML = "";
-        body.innerHTML = "";
-
-        if (!data || data.length === 0) {
-          body.innerHTML =
-            '<tr><td colspan="100%" style="text-align:center;">ไม่พบข้อมูล</td></tr>';
-          return;
-        }
-
-        const keys = Object.keys(data[0]);
+      data.forEach((row) => {
+        const tr = document.createElement("tr");
         keys.forEach((key) => {
-          const th = document.createElement("th");
-          th.textContent = key;
-          head.appendChild(th);
+          const td = document.createElement("td");
+          td.textContent = row[key];
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    function openStructureModal() {
+      if (!lastRawData || lastRawData.length === 0) return;
+
+      const fileName = document.getElementById("fileNameDisplay").value;
+      document.getElementById("modalTableName").innerText =
+        "Structure: " + fileName;
+
+      const body = document.getElementById("structureBody");
+      body.innerHTML = "";
+
+      const keys = Object.keys(lastRawData[0]);
+
+      keys.forEach((key) => {
+        let maxLength = 0;
+        let type = "String/Character";
+        let isNumeric = true;
+        let isDate = true;
+
+        lastRawData.forEach((row) => {
+          const val = String(row[key] || "").trim();
+          if (val.length > maxLength) maxLength = val.length;
+          if (val !== "" && isNaN(Number(val.replace(/,/g, "")))) {
+            isNumeric = false;
+          }
+          if (val !== "" && !/^\d{4}-\d{2}-\d{2}/.test(val)) {
+            isDate = false;
+          }
         });
 
-        data.forEach((row) => {
-          const tr = document.createElement("tr");
-          keys.forEach((key) => {
-            const td = document.createElement("td");
-            td.textContent = row[key];
-            tr.appendChild(td);
-          });
-          body.appendChild(tr);
-        });
-      }
+        if (isNumeric && maxLength > 0) type = "Numeric/Float";
+        else if (isDate && maxLength >= 10) type = "Date/Timestamp";
 
-      // --- ระบบ Structure Analysis ---
-      function openStructureModal() {
-        if (!lastRawData || lastRawData.length === 0) return;
-
-        const fileName = document.getElementById("fileNameDisplay").value;
-        document.getElementById("modalTableName").innerText =
-          "Structure: " + fileName;
-
-        const body = document.getElementById("structureBody");
-        body.innerHTML = "";
-
-        const keys = Object.keys(lastRawData[0]);
-
-        keys.forEach((key) => {
-          let maxLength = 0;
-          let type = "String/Character";
-          let isNumeric = true;
-          let isDate = true;
-
-          // วิเคราะห์จากข้อมูลที่มี (Sampling)
-          lastRawData.forEach((row) => {
-            const val = String(row[key] || "").trim();
-            if (val.length > maxLength) maxLength = val.length;
-
-            // เช็คว่าเป็นตัวเลขหรือไม่
-            if (val !== "" && isNaN(Number(val.replace(/,/g, "")))) {
-              isNumeric = false;
-            }
-            // เช็คว่าเป็นรูปแบบวันที่เบื้องต้น (ISO-like) หรือไม่
-            if (val !== "" && !/^\d{4}-\d{2}-\d{2}/.test(val)) {
-              isDate = false;
-            }
-          });
-
-          if (isNumeric && maxLength > 0) type = "Numeric/Float";
-          else if (isDate && maxLength >= 10) type = "Date/Timestamp";
-
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
                     <td><strong>${key}</strong></td>
                     <td>${type}</td>
                     <td>${maxLength}</td>
                 `;
-          body.appendChild(tr);
-        });
+        body.appendChild(tr);
+      });
 
-        document.getElementById("structureModal").style.display = "flex";
+      document.getElementById("structureModal").style.display = "flex";
+    }
+
+    function closeStructureModal() {
+      document.getElementById("structureModal").style.display = "none";
+    }
+
+    function renderPagination(totalPages) {
+      const container = document.getElementById("paginationControls");
+      if (totalPages === 0) {
+        container.innerHTML = "";
+        return;
       }
+      container.innerHTML = `หน้า: ${currentPage} / ${totalPages} `;
+      const prev = document.createElement("button");
+      prev.innerText = "ก่อนหน้า";
+      prev.disabled = currentPage === 1;
+      prev.onclick = () => {
+        currentPage--;
+        loadData();
+      };
+      const next = document.createElement("button");
+      next.innerText = "ถัดไป";
+      next.disabled = currentPage >= totalPages;
+      next.onclick = () => {
+        currentPage++;
+        loadData();
+      };
+      container.appendChild(prev);
+      container.appendChild(next);
+    }
 
-      function closeStructureModal() {
-        document.getElementById("structureModal").style.display = "none";
+    function searchData() {
+      currentPage = 1;
+      loadData();
+    }
+    function clearSearch() {
+      document.getElementById("searchInput").value = "";
+      sortField = ""; // ล้างค่าเรียงลำดับด้วยตอนล้างค้นหา (ถ้าต้องการ)
+      currentPage = 1;
+      loadData();
+    }
+
+    function exportCurrentPage() {
+      const table = document.getElementById("dataTable");
+      if (!table || table.rows.length <= 1) {
+        alert("ไม่มีข้อมูล");
+        return;
       }
+      const ws = XLSX.utils.table_to_sheet(table);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Current_Page");
+      let fileName =
+        document.getElementById("fileNameDisplay").value.split(".")[0] ||
+        "Export";
+      XLSX.writeFile(wb, `${fileName}_Page${currentPage}.xlsx`);
+    }
 
-      // --- ส่วนที่เหลือของโค้ดเดิม ---
-      function renderPagination(totalPages) {
-        const container = document.getElementById("paginationControls");
-        if (totalPages === 0) {
-          container.innerHTML = "";
+    async function exportAllData() {
+      const search = document.getElementById("searchInput").value;
+      const fileNameDisplay =
+        document.getElementById("fileNameDisplay").value;
+      if (!fileNameDisplay || fileNameDisplay === "ไม่ได้เลือกไฟล์") {
+        alert("กรุณาอัปโหลดไฟล์ก่อน");
+        return;
+      }
+      try {
+        // Export All ก็ควรใช้การ Sort ปัจจุบันด้วย
+        const res = await fetch(
+          `/api/data?page=1&limit=999999&search=${encodeURIComponent(search)}&sort=${sortField}&order=${sortOrder}`,
+        );
+        const result = await res.json();
+        if (!result.data || result.data.length === 0) {
+          alert("ไม่พบข้อมูล");
           return;
         }
-        container.innerHTML = `หน้า: ${currentPage} / ${totalPages} `;
-        const prev = document.createElement("button");
-        prev.innerText = "ก่อนหน้า";
-        prev.disabled = currentPage === 1;
-        prev.onclick = () => {
-          currentPage--;
-          loadData();
-        };
-        const next = document.createElement("button");
-        next.innerText = "ถัดไป";
-        next.disabled = currentPage >= totalPages;
-        next.onclick = () => {
-          currentPage++;
-          loadData();
-        };
-        container.appendChild(prev);
-        container.appendChild(next);
-      }
-
-      function searchData() {
-        currentPage = 1;
-        loadData();
-      }
-      function clearSearch() {
-        document.getElementById("searchInput").value = "";
-        currentPage = 1;
-        loadData();
-      }
-
-      function exportCurrentPage() {
-        const table = document.getElementById("dataTable");
-        if (!table || table.rows.length <= 1) {
-          alert("ไม่มีข้อมูล");
-          return;
-        }
-        const ws = XLSX.utils.table_to_sheet(table);
+        const ws = XLSX.utils.json_to_sheet(result.data);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Current_Page");
-        let fileName =
-          document.getElementById("fileNameDisplay").value.split(".")[0] ||
-          "Export";
-        XLSX.writeFile(wb, `${fileName}_Page${currentPage}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "All_Data");
+        XLSX.writeFile(wb, `${fileNameDisplay.split(".")[0]}_Full.xlsx`);
+      } catch (error) {
+        alert("เกิดข้อผิดพลาด");
       }
+    }
 
-      async function exportAllData() {
-        const search = document.getElementById("searchInput").value;
-        const fileNameDisplay =
-          document.getElementById("fileNameDisplay").value;
-        if (!fileNameDisplay || fileNameDisplay === "ไม่ได้เลือกไฟล์") {
-          alert("กรุณาอัปโหลดไฟล์ก่อน");
-          return;
-        }
-        try {
-          const res = await fetch(
-            `/api/data?page=1&limit=999999&search=${encodeURIComponent(search)}`,
-          );
-          const result = await res.json();
-          if (!result.data || result.data.length === 0) {
-            alert("ไม่พบข้อมูล");
-            return;
-          }
-          const ws = XLSX.utils.json_to_sheet(result.data);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, "All_Data");
-          XLSX.writeFile(wb, `${fileNameDisplay.split(".")[0]}_Full.xlsx`);
-        } catch (error) {
-          alert("เกิดข้อผิดพลาด");
-        }
-      }
+    document
+      .getElementById("searchInput")
+      .addEventListener("keypress", (e) => {
+        if (e.key === "Enter") searchData();
+      });
+  </script>
+</body>
 
-      document
-        .getElementById("searchInput")
-        .addEventListener("keypress", (e) => {
-          if (e.key === "Enter") searchData();
-        });
-    </script>
-  </body>
 </html>
