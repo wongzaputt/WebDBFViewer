@@ -1,5 +1,6 @@
 // public/js/viewer.js
 let currentPage = 1;
+let sortConfig = { key: null, direction: 'asc' };
 
 async function handleFileSelect(input) {
   if (!input.files[0]) return;
@@ -12,18 +13,46 @@ async function handleFileSelect(input) {
 
   const res = await fetch("/api/upload", { method: "POST", body: formData });
   if (res.ok) {
+    const result = await res.json();
     currentPage = 1;
+    // พยายามหา Default Primary Key จากชื่อไฟล์
+    detectDefaultSort(file.name);
     loadData();
   } else {
     alert("เกิดข้อผิดพลาดในการ Upload ไฟล์");
   }
 }
 
+function detectDefaultSort(fileName) {
+  const name = fileName.toUpperCase();
+  // กำหนด Default Primary Key ตามมาตรฐาน Express Accounting
+  const primaryKeys = {
+    'STMAS': 'STKCOD',
+    'ARMAS': 'CUSCOD',
+    'APMAS': 'SUPCOD',
+    'ISUAN': 'DOCNUM',
+    'GLMAS': 'ACCCOD'
+  };
+
+  // เช็คว่าชื่อไฟล์มีใน List ไหม
+  for (const [key, field] of Object.entries(primaryKeys)) {
+    if (name.includes(key)) {
+      sortConfig = { key: field, direction: 'asc' };
+      return;
+    }
+  }
+  sortConfig = { key: null, direction: 'asc' }; // ถ้าไม่พบ ให้เป็น null
+}
+
 async function loadData() {
   const search = document.getElementById("searchInput").value;
-  const res = await fetch(
-    `/api/data?page=${currentPage}&search=${encodeURIComponent(search)}`,
-  );
+  let url = `/api/data?page=${currentPage}&search=${encodeURIComponent(search)}`;
+  
+  if (sortConfig.key) {
+    url += `&sortBy=${sortConfig.key}&sortDir=${sortConfig.direction}`;
+  }
+
+  const res = await fetch(url);
   const result = await res.json();
   renderTable(result.data);
   renderPagination(result.totalPages);
@@ -44,7 +73,9 @@ function renderTable(data) {
   const keys = Object.keys(data[0]);
   keys.forEach((key) => {
     const th = document.createElement("th");
-    th.textContent = key;
+    th.style.cursor = "pointer";
+    th.innerHTML = `${key} ${getSortIcon(key)}`;
+    th.onclick = () => handleSort(key);
     head.appendChild(th);
   });
 
@@ -57,6 +88,21 @@ function renderTable(data) {
     });
     body.appendChild(tr);
   });
+}
+
+function getSortIcon(key) {
+  if (sortConfig.key !== key) return '↕️';
+  return sortConfig.direction === 'asc' ? '🔼' : '🔽';
+}
+
+function handleSort(key) {
+  if (sortConfig.key === key) {
+    sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortConfig.key = key;
+    sortConfig.direction = 'asc';
+  }
+  loadData();
 }
 
 function renderPagination(totalPages) {
